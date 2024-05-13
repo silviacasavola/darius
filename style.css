@@ -51,7 +51,7 @@ a:hover, a:focus, a:checked {
   text-decoration: underline;
 }
 
-#header-left, .header span, .header a {
+#header-left, #header span, #header a {
   cursor: pointer;
 }
 
