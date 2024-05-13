@@ -61,6 +61,7 @@ a:hover, a:focus, a:checked {
 
 .marquee-container {
   /* padding-top: 1.4vw; */
+  margin: 0; padding: 0;
   height: 100vh;
   /* display: flex; */
   /* overflow-x: hidden; */
