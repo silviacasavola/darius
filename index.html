@@ -12,7 +12,7 @@
   <div id="header-left">Dario Cerisano</div>
   <div id="header-center">
     <span id="photography-link">photography & art direction</span>
-      | 
+      |
     <span id="art-link">digital art</span>
   </div>
   <div id="header-right">
@@ -25,23 +25,67 @@
 
     <div class="marquee-container">
         <div class="marquee">
-            <img src="./img/1.jpg">
-            <img src="./img/2.jpg">
-            <img src="./img/3.jpg">
-            <img src="./img/4.jpg">
-            <img src="./img/5.jpg">
-            <img src="./img/6.jpg">
-            <img src="./img/7.jpg">
+            <img src="./img/prj1/1.jpg">
+            <img src="./img/prj1/2.jpg">
+            <img src="./img/prj1/3.jpg">
+            <img src="./img/prj1/4.jpg">
+            <img src="./img/prj1/5.jpg">
+            <img src="./img/prj1/6.jpg">
+            <img src="./img/prj1/7.jpg">
+        </div>
+    </div>
 
-            <img src="./img/1.jpg">
-            <img src="./img/2.jpg">
-            <img src="./img/3.jpg">
-            <img src="./img/4.jpg">
-            <img src="./img/5.jpg">
-            <img src="./img/6.jpg">
-            <img src="./img/7.jpg">
+    <div class="marquee-container">
+        <div class="marquee">
+            <img src="./img/prj2/1.jpg">
+            <img src="./img/prj2/2.jpg">
+            <img src="./img/prj2/3.jpg">
+            <img src="./img/prj2/4.jpg">
+            <img src="./img/prj2/5.jpg">
         </div>
     </div>
 </body>
+
+    <script>
+        // Get the marquee element
+        const marquees = document.querySelectorAll('.marquee');
+
+        marquees.forEach((marquee) => {
+
+        const images = marquee.querySelectorAll('img');
+
+        // Function to continuously move the marquee
+        function moveMarquee() {
+            let currentPosition = 0;
+            let speed = 1; // Adjust speed as needed
+
+            // Clone the images and append them to the marquee
+            images.forEach(image => {
+                const clonedImage = image.cloneNode(true);
+                marquee.appendChild(clonedImage);
+            });
+
+            // Function to move the marquee
+            function step() {
+                currentPosition -= speed;
+                marquee.style.transform = `translateX(${currentPosition}px)`;
+
+                // Check if the first image is fully out of view, then reset position
+                if (currentPosition <= -images[0].width) {
+                    currentPosition += images[0].width;
+                    marquee.style.transform = `translateX(${currentPosition}px)`;
+                }
+
+                requestAnimationFrame(step);
+            }
+
+            // Start the animation
+            step();
+        }
+
+        // Call the function to start the marquee movement
+        moveMarquee();
+      })
+    </script>
 <!-- <script src='graph.js'></script> -->
 </html>

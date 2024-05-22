@@ -8,9 +8,11 @@
 
 body {
   padding: 0;
-  min-width: 100vw; max-width: 100vw;
-  max-height: 100vh; min-height: 100vh;
-  overflow: hidden;
+  margin: 3vh 0 0 0;
+  min-width: 100vw; min-height: 100vh;
+  max-width: 100vw;
+  /* max-height: 100vh;  */
+  overflow-x: hidden;
   background-color: var(--grey);
   /* overflow: hidden; */
   /* font-family: "source-serif-pro"; */
@@ -35,11 +37,12 @@ a:hover, a:focus, a:checked {
   position: fixed;
   top: 0; left: 0; right: 0;
   justify-content: space-between;
-  /* background: var(--grey); */
+  background: white;
   z-index: 10;
-  padding: 0vw var(--margin) 0.6vw var(--margin);
+  /* padding: 0vw var(--margin) 0.6vw var(--margin); */
+  padding: 0vw var(--margin) 0.1vw var(--margin);
   line-height: 1.3em;
-  background: linear-gradient(180deg, #83FCFC 0%, #83FCFC 50%, rgba(255, 255, 255, 0) 100%);
+  /* background: linear-gradient(180deg, #83FCFC 0%, #83FCFC 50%, rgba(255, 255, 255, 0) 100%); */
 }
 
 #header-right {
@@ -53,6 +56,7 @@ a:hover, a:focus, a:checked {
 
 #header-left, #header span, #header a {
   cursor: pointer;
+  /* background-color: white; */
 }
 
 /* #header-right div, #header-right a, #header-left {
@@ -62,7 +66,8 @@ a:hover, a:focus, a:checked {
 .marquee-container {
   /* padding-top: 1.4vw; */
   margin: 0; padding: 0;
-  height: 100vh;
+  height: 97vh;
+  /* border: solid red; */
   /* display: flex; */
   /* overflow-x: hidden; */
   width: 100vw;
@@ -71,14 +76,7 @@ a:hover, a:focus, a:checked {
 
 .marquee {
     display: flex;
-    animation: marqueeAnimation 15s linear infinite; /* Change 15s to adjust speed */
 }
-
-@keyframes marqueeAnimation {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
-}
-
 .marquee img {
   height: 100vh;
   width: auto;
