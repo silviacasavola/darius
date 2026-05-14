@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Embla Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px 0;
+            background: #b8b8b8;
+            font-family: sans-serif;
+        }
+        .embla {
+            overflow: hidden;
+            max-width: 90vw;
+            margin: 0 auto;
+        }
+        .embla__container {
+            display: flex;
+        }
+        .embla__slide {
+            flex: 0 0 60%;
+            min-width: 0;
+            margin-right: 16px;
+        }
+        .embla__slide img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            margin: 0 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="embla">
+        <div class="embla__container">
+            <div class="embla__slide"><img src="./img/3.jpg"></div>
+            <div class="embla__slide"><img src="./img/10a.jpg"></div>
+            <div class="embla__slide"><img src="./img/11a.jpg"></div>
+            <div class="embla__slide"><img src="./img/11b.jpg"></div>
+            <div class="embla__slide"><img src="./img/12a.jpg"></div>
+            <div class="embla__slide"><img src="./img/12b.jpg"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/embla-carousel/embla-carousel.umd.js"></script>
+    <script>
+        const emblaNode = document.querySelector('.embla');
+        const embla = EmblaCarousel(emblaNode, { loop: true, align: 'center' });
+
+        document.getElementById('prev').addEventListener('click', () => embla.scrollPrev());
+        document.getElementById('next').addEventListener('click', () => embla.scrollNext());
+    </script>
+</body>
+</html>

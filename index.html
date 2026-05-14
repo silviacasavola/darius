@@ -4,98 +4,369 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Dario Cerisano</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=38">
     <link rel="stylesheet" href="https://use.typekit.net/hsl8mqb.css">
+    <script src="https://cdn.jsdelivr.net/npm/embla-carousel/embla-carousel.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay/embla-carousel-autoplay.umd.js"></script>
+    <style>
+        .marquee {
+            overflow: hidden;
+            height: 100vh;
+        }
+        .marquee__container {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .marquee__slide {
+            flex: 0 0 auto;
+            min-width: 0;
+            height: 80vh;
+            position: relative;
+        }
+        .marquee__slide.is-selected {
+            z-index: 2;
+        }
+        .marquee__slide img {
+            height: 100%;
+            width: auto;
+            display: block;
+            opacity: 0.6;
+            transform: scale(1);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .marquee__slide.is-selected img {
+            transform: scale(1.25);
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
 <section id="header">
   <div id="header-left">Dario Cerisano</div>
   <div id="header-center">
-    <span id="photography-link">photography & art direction</span>
-      |
-    <span id="art-link">digital art</span>
+    <span class="filter-btn" data-category="editorial">editorial</span>|
+    <span class="filter-btn" data-category="campaign">campaign</span>|
+    <span class="filter-btn" data-category="analogue">analogue</span>
   </div>
   <div id="header-right">
-    <span>about</span>
-    <a href="mailto:dariocerisano@gmail.com">e-mail</a>
-    <a href="https://www.instagram.com/dariocerisano">instagram</a>
+    <div id="hero-toggle">▾</div>
+  </div>
+  <div id="hero">
+    <div id="hero-links">
+      <a href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>|
+      <a href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
+    </div>
+    <!-- <div id="hero-subtitle">Art director and photographer</div> -->
+    <img src="./opening.png" alt="Dario Cerisano">
   </div>
 </section>
 
 
-    <div class="project-container">
-        <div class="marquee">
-            <img src="./img/prj1/1.jpg">
-            <img src="./img/prj1/2.jpg">
-            <img src="./img/prj1/3.jpg">
-            <img src="./img/prj1/4.jpg">
-            <img src="./img/prj1/5.jpg">
-            <img src="./img/prj1/6.jpg">
-            <img src="./img/prj1/7.jpg">
-        </div>
-    <div class="project-information">
-      <div class="project-title">"Diario, Memorie di una vita di marmo"</div>
-      <div class="year">2022</div>
-      <div class="expand">▼</div>
-    </div>
-    </div>
-
-    <div class="project-container">
-        <div class="marquee">
-            <img src="./img/prj2/1.jpg">
-            <img src="./img/prj2/2.jpg">
-            <img src="./img/prj2/3.jpg">
-            <img src="./img/prj2/4.jpg">
-            <img src="./img/prj2/5.jpg">
-        </div>
-    <div class="project-information">
-      <div class="project-title">Vivetta FW23/24 Campaign</div>
-      <div class="year">2024</div>
-      <div class="expand">▼</div>
-    </div>
-    </div>
+    <div id="projects-container"></div>
 </body>
 
     <script>
-        // Get the marquee element
-        const marquees = document.querySelectorAll('.marquee');
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQD9yhBmVkscTAjyKbHkvD_kvtZoAzz0SC8U3BJ83RrJUaYuaZei2JRVREMGN6i1kByUI0b-4tSXfUu/pub?output=csv&gid=0';
 
-        marquees.forEach((marquee) => {
+        function parseCSV(csv) {
+            const rows = [];
+            let current = '';
+            let inQuotes = false;
 
-        const images = marquee.querySelectorAll('img');
-
-        // Function to continuously move the marquee
-        function moveMarquee() {
-            let currentPosition = 0;
-            let speed = 1; // Adjust speed as needed
-
-            // Clone the images and append them to the marquee
-            images.forEach(image => {
-                const clonedImage = image.cloneNode(true);
-                marquee.appendChild(clonedImage);
-            });
-
-            // Function to move the marquee
-            function step() {
-                currentPosition -= speed;
-                marquee.style.transform = `translateX(${currentPosition}px)`;
-
-                // Check if the first image is fully out of view, then reset position
-                if (currentPosition <= -images[0].width) {
-                    currentPosition += images[0].width;
-                    marquee.style.transform = `translateX(${currentPosition}px)`;
+            for (let i = 0; i < csv.length; i++) {
+                const char = csv[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                    current += char;
+                } else if (char === '\n' && !inQuotes) {
+                    if (current.trim()) rows.push(current);
+                    current = '';
+                } else {
+                    current += char;
                 }
-
-                requestAnimationFrame(step);
             }
+            if (current.trim()) rows.push(current);
 
-            // Start the animation
-            step();
+            const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+
+            return rows.slice(1).map(row => {
+                const values = [];
+                let val = '';
+                let quoted = false;
+
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"') {
+                        quoted = !quoted;
+                    } else if (char === ',' && !quoted) {
+                        values.push(val.trim());
+                        val = '';
+                    } else {
+                        val += char;
+                    }
+                }
+                values.push(val.trim());
+
+                const obj = {};
+                headers.forEach((header, idx) => {
+                    obj[header] = values[idx] || '';
+                });
+                return obj;
+            });
         }
 
-        // Call the function to start the marquee movement
-        moveMarquee();
-      })
-     </script>
-<!-- <script src='graph.js'></script> -->
+        function createProjectHTML(project) {
+            const filenames = project.filenames.split(',').map(f => f.trim());
+
+            const slidesHTML = filenames
+                .map(name => `<div class="marquee__slide"><img src="./img/${name}.jpg"></div>`)
+                .join('\n            ');
+
+            return `
+    <div class="project-container" data-category="${project.category}">
+        <div class="main-row">
+        <div class="marquee">
+            <div class="marquee__container">
+                ${slidesHTML}
+            </div>
+        <div class="project-information">${project.name} (${project.subtitle || project.category}, ${project.year}) <span class="expand">▾</span></div>
+        </div>
+        </div>
+        <div class="credits">
+            <span>${project.credits}</span>
+        </div>
+    </div>`;
+        }
+
+        function setupHeroToggle() {
+            const toggle = document.getElementById('hero-toggle');
+            const header = document.getElementById('header');
+            const hero = document.getElementById('hero');
+
+            function collapseHero() {
+                if (!header.classList.contains('collapsed')) {
+                    header.classList.add('collapsed');
+                    toggle.classList.add('flipped');
+                }
+            }
+
+            function toggleHero() {
+                header.classList.toggle('collapsed');
+                toggle.classList.toggle('flipped');
+            }
+
+            toggle.addEventListener('click', toggleHero);
+            hero.addEventListener('click', collapseHero);
+
+            let heroScrolled = false;
+            window.addEventListener('wheel', (e) => {
+                if (!heroScrolled && e.deltaY > 0) {
+                    collapseHero();
+                    heroScrolled = true;
+                }
+            });
+        }
+
+        // Shared state used by both setupCreditsToggle and startCarousels
+        let creditsIgnoreUntil = 0;
+
+        // Custom smooth scroll with ease-in-out (gentler than native behavior: smooth)
+        let scrollAnimRaf = null;
+        function smoothScrollTo(targetY, duration = 900) {
+            const startY = window.scrollY;
+            const dist = targetY - startY;
+            if (Math.abs(dist) < 1) return;
+            if (scrollAnimRaf) cancelAnimationFrame(scrollAnimRaf);
+
+            const prevSnap = document.documentElement.style.scrollSnapType;
+            document.documentElement.style.scrollSnapType = 'none';
+
+            const startTime = performance.now();
+            function tick(now) {
+                const t = Math.min((now - startTime) / duration, 1);
+                const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                window.scrollTo(0, startY + dist * ease);
+                if (t < 1) {
+                    scrollAnimRaf = requestAnimationFrame(tick);
+                } else {
+                    scrollAnimRaf = null;
+                    document.documentElement.style.scrollSnapType = prevSnap;
+                }
+            }
+            scrollAnimRaf = requestAnimationFrame(tick);
+        }
+        function closeAllCredits() {
+            if (performance.now() < creditsIgnoreUntil) return;
+            if (!document.querySelector('.credits.expanded')) return;
+            document.querySelectorAll('.credits.expanded').forEach(c => c.classList.remove('expanded'));
+            document.querySelectorAll('.expand').forEach(el => {
+                el.classList.remove('flipped');
+                el.innerHTML = '▾';
+            });
+        }
+
+        function setupCreditsToggle() {
+            document.querySelectorAll('.project-container').forEach(container => {
+                const info = container.querySelector('.project-information');
+                const expander = container.querySelector('.expand');
+                const credits = container.querySelector('.credits');
+
+                if (!info || !expander || !credits) return;
+
+                info.addEventListener('click', function() {
+                    document.querySelectorAll('.credits.expanded').forEach(c => {
+                        if (c !== credits) c.classList.remove('expanded');
+                    });
+                    document.querySelectorAll('.expand').forEach(el => {
+                        if (el !== expander) {
+                            el.classList.remove('flipped');
+                            el.innerHTML = '▾';
+                        }
+                    });
+
+                    const willExpand = !credits.classList.contains('expanded');
+                    credits.classList.toggle('expanded');
+                    expander.classList.toggle('flipped');
+                    expander.innerHTML = willExpand ? '▴' : '▾';
+
+                    if (willExpand) {
+                        // Suppress the auto-close while we programmatically scroll
+                        creditsIgnoreUntil = performance.now() + 1500;
+                        // Use the credits' actual content height (capped at the 50vh max-height)
+                        // so we don't overscroll when the credits are shorter than 50vh
+                        const containerRect = container.getBoundingClientRect();
+                        const expansion = Math.min(credits.scrollHeight, window.innerHeight * 0.5);
+                        const targetY = window.scrollY + containerRect.bottom + expansion - window.innerHeight;
+                        smoothScrollTo(targetY, 900);
+                    }
+                });
+            });
+        }
+
+        function setupFilters() {
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const activeCategories = new Set(['editorial', 'campaign', 'analogue']);
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const category = btn.dataset.category;
+
+                    if (activeCategories.has(category) && activeCategories.size === 1) {
+                        return;
+                    }
+
+                    if (activeCategories.has(category)) {
+                        activeCategories.delete(category);
+                        btn.classList.add('hidden');
+                    } else {
+                        activeCategories.add(category);
+                        btn.classList.remove('hidden');
+                    }
+
+                    document.querySelectorAll('.project-container').forEach(project => {
+                        const projectCat = project.dataset.category;
+                        if (activeCategories.has(projectCat)) {
+                            project.classList.remove('collapsed');
+                        } else {
+                            project.classList.add('collapsed');
+                        }
+                    });
+                });
+            });
+        }
+
+        // Initialize a simple Embla carousel for each project
+        function startCarousels() {
+            document.querySelectorAll('.marquee').forEach(viewport => {
+                const container = viewport.querySelector('.marquee__container');
+                const originalSlides = Array.from(container.children);
+                if (originalSlides.length < 2) return;
+
+                // Embla's loop needs enough total slide width to engage. Duplicate
+                // slides in DOM until the total content is well past the viewport width.
+                const viewportWidth = viewport.clientWidth;
+                let safety = 0;
+                while (container.scrollWidth < viewportWidth * 3 && safety++ < 20) {
+                    originalSlides.forEach(slide => container.appendChild(slide.cloneNode(true)));
+                }
+
+                const autoplay = EmblaCarouselAutoplay({
+                    delay: 3000,
+                    playOnInit: false,
+                    stopOnInteraction: false,
+                    stopOnMouseEnter: true,
+                });
+
+                const embla = EmblaCarousel(viewport, {
+                    loop: true,
+                    align: 'center',
+                }, [autoplay]);
+                setTimeout(() => embla.reInit(), 150);
+
+                // Active slide gets .is-selected → bigger, brighter, higher z-index
+                const updateSelected = () => {
+                    const idx = embla.selectedScrollSnap();
+                    embla.slideNodes().forEach((slide, i) => {
+                        slide.classList.toggle('is-selected', i === idx);
+                    });
+                };
+                embla.on('select', updateSelected);
+                embla.on('reInit', updateSelected);
+                updateSelected();
+
+                // Click a slide to scroll to it
+                embla.slideNodes().forEach((slide, i) => {
+                    slide.style.cursor = 'pointer';
+                    slide.addEventListener('click', () => embla.scrollTo(i));
+                });
+
+                // Only play when the carousel is nearly fully in view
+                // (i.e., the user has settled on this project, not mid-scroll).
+                // Same view-change moment also closes any expanded credits.
+                const io = new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) autoplay.play();
+                        else autoplay.stop();
+                        setTimeout(closeAllCredits, 500);
+                    });
+                }, { threshold: 0.95 });
+                io.observe(viewport);
+            });
+        }
+
+        async function init() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const csv = await response.text();
+                const projects = parseCSV(csv);
+
+                const container = document.getElementById('projects-container');
+                container.innerHTML = projects.map(p => createProjectHTML(p)).join('');
+
+                setupFilters();
+                setupCreditsToggle();
+                setupHeroToggle();
+
+                // Wait for all images to load (with actual dimensions) so Embla measures correctly
+                const allImages = Array.from(container.querySelectorAll('img'));
+                await Promise.all(allImages.map(img =>
+                    (img.complete && img.naturalWidth > 0)
+                        ? Promise.resolve()
+                        : new Promise(resolve => {
+                            img.addEventListener('load', resolve);
+                            img.addEventListener('error', resolve);
+                        })
+                ));
+                // One more frame for layout to settle before Embla measures
+                await new Promise(resolve => requestAnimationFrame(resolve));
+
+                startCarousels();
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+            }
+        }
+
+        init();
+    </script>
 </html>
