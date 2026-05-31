@@ -4,8 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Dario Cerisano</title>
-    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="style.css?v=46">
     <link rel="stylesheet" href="https://use.typekit.net/hsl8mqb.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/embla-carousel/embla-carousel.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay/embla-carousel-autoplay.umd.js"></script>
     <style>
@@ -31,7 +34,7 @@
             height: 100%;
             width: auto;
             display: block;
-            opacity: 0.6;
+            opacity: 0.4;
             transform: scale(1);
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
@@ -53,11 +56,10 @@
     <div id="hero-toggle">▾</div>
   </div>
   <div id="hero">
-    <div id="hero-links">
-      <a href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>|
-      <a href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
-    </div>
+    <a id="hero-link-left" href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>
+    <a id="hero-link-right" href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
     <!-- <div id="hero-subtitle">Art director and photographer</div> -->
+    <p id="hero-bio">I am an art director and photographer turning dreams into solide realtà. Selected clients: Silvia, Inman, Diego, Ali. Selected publications: Horses International, QB, Lallo33, ma 33 non è l'età.</p>
     <img src="./opening.png" alt="Dario Cerisano">
   </div>
 </section>
@@ -130,8 +132,9 @@
             <div class="marquee__container">
                 ${slidesHTML}
             </div>
-        <div class="project-information">${project.name} (${project.subtitle || project.category}, ${project.year}) <span class="expand">▾</span></div>
+        <div class="project-information2"><span class="name2">${project.name}</span> <span class="sub2">${project.subtitle || project.category}, ${project.year}</span></div>
         </div>
+        <div class="project-information">${project.name} (${project.subtitle || project.category}, ${project.year}) <span class="expand">▾</span></div>
         </div>
         <div class="credits">
             <span>${project.credits}</span>
@@ -199,7 +202,10 @@
         function closeAllCredits() {
             if (performance.now() < creditsIgnoreUntil) return;
             if (!document.querySelector('.credits.expanded')) return;
-            document.querySelectorAll('.credits.expanded').forEach(c => c.classList.remove('expanded'));
+            document.querySelectorAll('.credits.expanded').forEach(c => {
+                c.classList.remove('expanded');
+                c.style.maxHeight = '0';
+            });
             document.querySelectorAll('.expand').forEach(el => {
                 el.classList.remove('flipped');
                 el.innerHTML = '▾';
@@ -216,7 +222,10 @@
 
                 info.addEventListener('click', function() {
                     document.querySelectorAll('.credits.expanded').forEach(c => {
-                        if (c !== credits) c.classList.remove('expanded');
+                        if (c !== credits) {
+                            c.classList.remove('expanded');
+                            c.style.maxHeight = '0';
+                        }
                     });
                     document.querySelectorAll('.expand').forEach(el => {
                         if (el !== expander) {
@@ -231,13 +240,19 @@
                     expander.innerHTML = willExpand ? '▴' : '▾';
 
                     if (willExpand) {
-                        // Suppress the auto-close while we programmatically scroll
-                        creditsIgnoreUntil = performance.now() + 1500;
-                        // Use the credits' actual content height (capped at the 50vh max-height)
-                        // so we don't overscroll when the credits are shorter than 50vh
-                        const containerRect = container.getBoundingClientRect();
                         const expansion = Math.min(credits.scrollHeight, window.innerHeight * 0.5);
+                        credits.style.maxHeight = expansion + 'px';
+
+                        creditsIgnoreUntil = performance.now() + 1500;
+                        const containerRect = container.getBoundingClientRect();
                         const targetY = window.scrollY + containerRect.bottom + expansion - window.innerHeight;
+                        smoothScrollTo(targetY, 900);
+                    } else {
+                        credits.style.maxHeight = '0';
+
+                        creditsIgnoreUntil = performance.now() + 1500;
+                        const containerRect = container.getBoundingClientRect();
+                        const targetY = window.scrollY + containerRect.top;
                         smoothScrollTo(targetY, 900);
                     }
                 });
@@ -324,10 +339,16 @@
                 // Only play when the carousel is nearly fully in view
                 // (i.e., the user has settled on this project, not mid-scroll).
                 // Same view-change moment also closes any expanded credits.
+                const projectContainer = viewport.closest('.project-container');
                 const io = new IntersectionObserver(entries => {
                     entries.forEach(e => {
-                        if (e.isIntersecting) autoplay.play();
-                        else autoplay.stop();
+                        if (e.isIntersecting) {
+                            autoplay.play();
+                            projectContainer?.classList.add('in-view');
+                        } else {
+                            autoplay.stop();
+                            projectContainer?.classList.remove('in-view');
+                        }
                         setTimeout(closeAllCredits, 500);
                     });
                 }, { threshold: 0.95 });
@@ -362,6 +383,15 @@
                 await new Promise(resolve => requestAnimationFrame(resolve));
 
                 startCarousels();
+
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const firstSelectedImg = document.querySelector('.marquee .marquee__slide.is-selected img');
+                    if (firstSelectedImg) {
+                        const visualWidth = firstSelectedImg.getBoundingClientRect().width;
+                        const sideCenter = (window.innerWidth - visualWidth) / 4;
+                        document.documentElement.style.setProperty('--side-center', sideCenter + 'px');
+                    }
+                }));
             } catch (error) {
                 console.error('Failed to load projects:', error);
             }

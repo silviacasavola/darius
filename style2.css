@@ -14,7 +14,6 @@
   --medium-text: 1.rem;
   --grey: #b8b8b8;
   --beige: #DDDAD6;
-  --side-center: 14vw;
 }
 
 
@@ -29,7 +28,7 @@ body {
   background-color: var(--grey);
   /* font-family: serif; */
   /* font-family: "helvetica"; */
-  font-family: "EB Garamond", Garamond, "Adobe Garamond Pro", serif;
+  font-family: "Bookish", serif;
   font-weight: 200;
   /* display: flex; */
   /* flex-direction: column; */
@@ -64,7 +63,7 @@ a:hover, a:focus, a:checked {
   transition: transform 0.5s ease-out, margin-bottom 0.5s ease-out;
 }
 
-#header-left, #header-center, #header-right {
+#header-left, #header-center, #header-right, #hero-links {
   text-shadow: 0 0 6px rgba(184, 184, 184, 0.7);
 }
 
@@ -117,12 +116,11 @@ a:hover, a:focus, a:checked {
   cursor: pointer;
   position: relative;
   background: var(--grey);
-  transition: background 0.5s ease-out 0s;
+  transition: background 0.5s ease-out 0.3s;
 }
 
 #header.collapsed #hero {
   background: transparent;
-  transition: background 0.5s ease-out 0.3s;
 }
 
 #header.collapsed #hero {
@@ -136,37 +134,14 @@ a:hover, a:focus, a:checked {
   font-size: var(--medium-text);
 }
 
-#hero-bio {
+#hero-links {
   position: absolute;
   top: var(--halfmargin);
-  left: var(--margin);
-  max-width: 28rem;
-  margin: 0;
+  right: var(--margin);
+  display: flex;
+  gap: 1vw;
   font-size: var(--medium-text);
-  line-height: 1.4;
-  text-shadow: 0 0 6px rgba(184, 184, 184, 0.7);
 }
-
-#hero-link-left,
-#hero-link-right {
-  position: absolute;
-  bottom: var(--halfmargin);
-  z-index: 2;
-  font-size: var(--medium-text);
-  text-shadow: 0 0 6px rgba(184, 184, 184, 0.7);
-  pointer-events: auto;
-}
-
-#hero-link-left {
-  left: var(--side-center);
-  transform: translateX(-50%);
-}
-
-#hero-link-right {
-  right: var(--side-center);
-  transform: translateX(50%);
-}
-
 
 #hero img {
   height: 60vh;
@@ -196,7 +171,8 @@ a:hover, a:focus, a:checked {
 }
 
 #header-center {
-  display: none;
+  display: inline-flex;
+  gap: 1vw;
 }
 
 #header-left, #header span, #header a {
@@ -221,11 +197,6 @@ a:hover, a:focus, a:checked {
   flex-wrap: nowrap;
   scroll-snap-align: start;
   font-size: 1rem;
-  transition: margin-bottom 0.3s ease-out;
-}
-
-.project-container:has(.credits.expanded) {
-  margin-bottom: 0;
 }
 
 .project-container.collapsed {
@@ -250,7 +221,6 @@ a:hover, a:focus, a:checked {
 
 .project-information {
   position: absolute;
-  opacity:0;
   bottom: 0.5em;
   transition: bottom 1s;
   left: var(--margin);
@@ -323,6 +293,10 @@ a:hover, a:focus, a:checked {
   column-gap: var(--margin);
 }
 
+.credits.expanded {
+  max-height: 50vh;
+  /* padding: calc(var(--margin)/2) var(--margin); */
+}
 
 .expand {
   cursor: pointer;
@@ -330,28 +304,3 @@ a:hover, a:focus, a:checked {
 }
 
 /* expand triangle character is toggled in JS (▾ → ▴); no CSS flip needed */
-
-.project-information2 {
-  box-sizing: border-box;
-  position: fixed;
-  display: flex;
-  top: 50vh;
-  left: var(--side-center);
-  right: var(--side-center);
-  justify-content: space-between;
-  z-index: 5;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease-out;
-  span {
-    text-shadow: 0 0 6px rgba(184, 184, 184, 0.7);
-    &:nth-child(1){
-      transform:translateX(-50%);}
-    &:nth-child(2){
-      transform:translateX(+50%);}
-  }
-}
-
-.project-container.in-view .project-information2 {
-  opacity: 1;
-}

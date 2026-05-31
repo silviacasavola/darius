@@ -4,8 +4,42 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Dario Cerisano</title>
-    <link rel="stylesheet" href="style.css?v=32">
+    <link rel="stylesheet" href="style2.css?v=38">
     <link rel="stylesheet" href="https://use.typekit.net/hsl8mqb.css">
+    <script src="https://cdn.jsdelivr.net/npm/embla-carousel/embla-carousel.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/embla-carousel-autoplay/embla-carousel-autoplay.umd.js"></script>
+    <style>
+        .marquee {
+            overflow: hidden;
+            height: 100vh;
+        }
+        .marquee__container {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .marquee__slide {
+            flex: 0 0 auto;
+            min-width: 0;
+            height: 80vh;
+            position: relative;
+        }
+        .marquee__slide.is-selected {
+            z-index: 2;
+        }
+        .marquee__slide img {
+            height: 100%;
+            width: auto;
+            display: block;
+            opacity: 0.6;
+            transform: scale(1);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .marquee__slide.is-selected img {
+            transform: scale(1.25);
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
 <section id="header">
@@ -16,15 +50,15 @@
     <span class="filter-btn" data-category="analogue">analogue</span>
   </div>
   <div id="header-right">
-    <div id="hero-toggle">▼</div>
+    <div id="hero-toggle">▾</div>
   </div>
   <div id="hero">
     <div id="hero-links">
-      <a href="mailto:dariocerisano@gmail.com">e-mail</a>|
-      <a href="https://www.instagram.com/dariocerisano">instagram</a>
+      <a href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>|
+      <a href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
     </div>
-    <div id="hero-subtitle">Art director and photographer</div>
-    <img src="./img/0.png" alt="Dario Cerisano">
+    <!-- <div id="hero-subtitle">Art director and photographer</div> -->
+    <img src="./opening.png" alt="Dario Cerisano">
   </div>
 </section>
 
@@ -33,16 +67,13 @@
 </body>
 
     <script>
-        // Google Sheet published CSV URL
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQD9yhBmVkscTAjyKbHkvD_kvtZoAzz0SC8U3BJ83RrJUaYuaZei2JRVREMGN6i1kByUI0b-4tSXfUu/pub?output=csv&gid=0';
 
-        // Parse CSV into array of objects (handles multi-line quoted fields)
         function parseCSV(csv) {
             const rows = [];
             let current = '';
             let inQuotes = false;
 
-            // First, split into rows (handling quoted newlines)
             for (let i = 0; i < csv.length; i++) {
                 const char = csv[i];
                 if (char === '"') {
@@ -57,10 +88,8 @@
             }
             if (current.trim()) rows.push(current);
 
-            // Parse header
             const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
 
-            // Parse each data row
             return rows.slice(1).map(row => {
                 const values = [];
                 let val = '';
@@ -87,26 +116,21 @@
             });
         }
 
-        // Create project HTML from data
         function createProjectHTML(project) {
-            // Convert filenames like "1a, 1b, 1c" to image tags
             const filenames = project.filenames.split(',').map(f => f.trim());
 
-            const imagesHTML = filenames
-                .map(name => `<img src="./img/${name}.jpg">`)
+            const slidesHTML = filenames
+                .map(name => `<div class="marquee__slide"><img src="./img/${name}.jpg"></div>`)
                 .join('\n            ');
 
             return `
     <div class="project-container" data-category="${project.category}">
         <div class="main-row">
         <div class="marquee">
-            ${imagesHTML}
-        </div>
-        <div class="project-information">
-            <div class="project-title">${project.name}</div>
-            <div class="project-subtitle">${project.subtitle || project.category}</div>
-            <div class="year">${project.year}</div>
-            <div class="expand">▼</div>
+            <div class="marquee__container">
+                ${slidesHTML}
+            </div>
+        <div class="project-information">${project.name} (${project.subtitle || project.category}, ${project.year}) <span class="expand">▾</span></div>
         </div>
         </div>
         <div class="credits">
@@ -115,7 +139,6 @@
     </div>`;
         }
 
-        // Setup hero expand/collapse
         function setupHeroToggle() {
             const toggle = document.getElementById('hero-toggle');
             const header = document.getElementById('header');
@@ -133,13 +156,9 @@
                 toggle.classList.toggle('flipped');
             }
 
-            // Click on arrow toggles
             toggle.addEventListener('click', toggleHero);
-
-            // Click on hero collapses
             hero.addEventListener('click', collapseHero);
 
-            // Scroll down collapses hero (first scroll only)
             let heroScrolled = false;
             window.addEventListener('wheel', (e) => {
                 if (!heroScrolled && e.deltaY > 0) {
@@ -149,7 +168,44 @@
             });
         }
 
-        // Setup credits expand/collapse
+        // Shared state used by both setupCreditsToggle and startCarousels
+        let creditsIgnoreUntil = 0;
+
+        // Custom smooth scroll with ease-in-out (gentler than native behavior: smooth)
+        let scrollAnimRaf = null;
+        function smoothScrollTo(targetY, duration = 900) {
+            const startY = window.scrollY;
+            const dist = targetY - startY;
+            if (Math.abs(dist) < 1) return;
+            if (scrollAnimRaf) cancelAnimationFrame(scrollAnimRaf);
+
+            const prevSnap = document.documentElement.style.scrollSnapType;
+            document.documentElement.style.scrollSnapType = 'none';
+
+            const startTime = performance.now();
+            function tick(now) {
+                const t = Math.min((now - startTime) / duration, 1);
+                const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                window.scrollTo(0, startY + dist * ease);
+                if (t < 1) {
+                    scrollAnimRaf = requestAnimationFrame(tick);
+                } else {
+                    scrollAnimRaf = null;
+                    document.documentElement.style.scrollSnapType = prevSnap;
+                }
+            }
+            scrollAnimRaf = requestAnimationFrame(tick);
+        }
+        function closeAllCredits() {
+            if (performance.now() < creditsIgnoreUntil) return;
+            if (!document.querySelector('.credits.expanded')) return;
+            document.querySelectorAll('.credits.expanded').forEach(c => c.classList.remove('expanded'));
+            document.querySelectorAll('.expand').forEach(el => {
+                el.classList.remove('flipped');
+                el.innerHTML = '▾';
+            });
+        }
+
         function setupCreditsToggle() {
             document.querySelectorAll('.project-container').forEach(container => {
                 const info = container.querySelector('.project-information');
@@ -159,21 +215,35 @@
                 if (!info || !expander || !credits) return;
 
                 info.addEventListener('click', function() {
-                    // Close all others
                     document.querySelectorAll('.credits.expanded').forEach(c => {
                         if (c !== credits) c.classList.remove('expanded');
                     });
-                    document.querySelectorAll('.expand.flipped').forEach(el => {
-                        if (el !== expander) el.classList.remove('flipped');
+                    document.querySelectorAll('.expand').forEach(el => {
+                        if (el !== expander) {
+                            el.classList.remove('flipped');
+                            el.innerHTML = '▾';
+                        }
                     });
 
+                    const willExpand = !credits.classList.contains('expanded');
                     credits.classList.toggle('expanded');
                     expander.classList.toggle('flipped');
+                    expander.innerHTML = willExpand ? '▴' : '▾';
+
+                    if (willExpand) {
+                        // Suppress the auto-close while we programmatically scroll
+                        creditsIgnoreUntil = performance.now() + 1500;
+                        // Use the credits' actual content height (capped at the 50vh max-height)
+                        // so we don't overscroll when the credits are shorter than 50vh
+                        const containerRect = container.getBoundingClientRect();
+                        const expansion = Math.min(credits.scrollHeight, window.innerHeight * 0.5);
+                        const targetY = window.scrollY + containerRect.bottom + expansion - window.innerHeight;
+                        smoothScrollTo(targetY, 900);
+                    }
                 });
             });
         }
 
-        // Setup category filters
         function setupFilters() {
             const filterBtns = document.querySelectorAll('.filter-btn');
             const activeCategories = new Set(['editorial', 'campaign', 'analogue']);
@@ -182,7 +252,6 @@
                 btn.addEventListener('click', () => {
                     const category = btn.dataset.category;
 
-                    // If trying to hide and it's the last one, don't allow
                     if (activeCategories.has(category) && activeCategories.size === 1) {
                         return;
                     }
@@ -195,7 +264,6 @@
                         btn.classList.remove('hidden');
                     }
 
-                    // Show/hide projects with collapse transition
                     document.querySelectorAll('.project-container').forEach(project => {
                         const projectCat = project.dataset.category;
                         if (activeCategories.has(projectCat)) {
@@ -208,124 +276,65 @@
             });
         }
 
-        // Start marquee animation for all carousels (only one at a time)
-        function startMarquees() {
-            const marquees = document.querySelectorAll('.marquee');
-            const marqueeData = [];
+        // Initialize a simple Embla carousel for each project
+        function startCarousels() {
+            document.querySelectorAll('.marquee').forEach(viewport => {
+                const container = viewport.querySelector('.marquee__container');
+                const originalSlides = Array.from(container.children);
+                if (originalSlides.length < 2) return;
 
-            marquees.forEach((marquee) => {
-                const images = Array.from(marquee.querySelectorAll('img'));
-
-                // Skip if only one image
-                if (images.length <= 1) {
-                    marqueeData.push(null);
-                    return;
+                // Embla's loop needs enough total slide width to engage. Duplicate
+                // slides in DOM until the total content is well past the viewport width.
+                const viewportWidth = viewport.clientWidth;
+                let safety = 0;
+                while (container.scrollWidth < viewportWidth * 3 && safety++ < 20) {
+                    originalSlides.forEach(slide => container.appendChild(slide.cloneNode(true)));
                 }
 
-                let totalWidth = 0;
-                images.forEach(img => totalWidth += img.offsetWidth);
-
-                // Clone all images for seamless loop
-                images.forEach(image => {
-                    const clone = image.cloneNode(true);
-                    marquee.appendChild(clone);
+                const autoplay = EmblaCarouselAutoplay({
+                    delay: 3000,
+                    playOnInit: false,
+                    stopOnInteraction: false,
+                    stopOnMouseEnter: true,
                 });
 
-                marqueeData.push({
-                    element: marquee,
-                    totalWidth,
-                    currentPosition: 0,
-                    isActive: false
+                const embla = EmblaCarousel(viewport, {
+                    loop: true,
+                    align: 'center',
+                }, [autoplay]);
+                setTimeout(() => embla.reInit(), 150);
+
+                // Active slide gets .is-selected → bigger, brighter, higher z-index
+                const updateSelected = () => {
+                    const idx = embla.selectedScrollSnap();
+                    embla.slideNodes().forEach((slide, i) => {
+                        slide.classList.toggle('is-selected', i === idx);
+                    });
+                };
+                embla.on('select', updateSelected);
+                embla.on('reInit', updateSelected);
+                updateSelected();
+
+                // Click a slide to scroll to it
+                embla.slideNodes().forEach((slide, i) => {
+                    slide.style.cursor = 'pointer';
+                    slide.addEventListener('click', () => embla.scrollTo(i));
                 });
+
+                // Only play when the carousel is nearly fully in view
+                // (i.e., the user has settled on this project, not mid-scroll).
+                // Same view-change moment also closes any expanded credits.
+                const io = new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) autoplay.play();
+                        else autoplay.stop();
+                        setTimeout(closeAllCredits, 500);
+                    });
+                }, { threshold: 0.95 });
+                io.observe(viewport);
             });
-
-            const speed = 0.5; // Slower speed
-
-            let activeMarquee = null;
-
-            // Observe which marquee is most visible - that one MOVES
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const data = marqueeData.find(d => d && d.element === entry.target);
-                    if (data) {
-                        data.ratio = entry.intersectionRatio;
-                    }
-                });
-
-                // Find the most visible marquee (>50%)
-                let mostVisible = null;
-                let highestRatio = 0.5;
-
-                marqueeData.forEach(data => {
-                    if (data && data.ratio > highestRatio) {
-                        highestRatio = data.ratio;
-                        mostVisible = data;
-                    }
-                });
-
-                activeMarquee = mostVisible;
-            }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
-
-            // Add interactions: click/hold and scroll pause the animation
-            marqueeData.forEach(data => {
-                if (!data) return;
-
-                observer.observe(data.element);
-                data.isInteracting = false;
-
-                // Click and hold to pause
-                data.element.addEventListener('mousedown', () => {
-                    data.isInteracting = true;
-                });
-                document.addEventListener('mouseup', () => {
-                    data.isInteracting = false;
-                });
-
-                // Scroll to pause and manually control
-                let scrollTimeout;
-                data.element.addEventListener('wheel', (e) => {
-                    if (activeMarquee !== data) return;
-
-                    e.preventDefault();
-                    data.isInteracting = true;
-
-                    // Manual scroll
-                    const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-                    data.currentPosition -= delta;
-
-                    // Wrap around
-                    if (data.currentPosition > 0) {
-                        data.currentPosition -= data.totalWidth;
-                    } else if (data.currentPosition <= -data.totalWidth) {
-                        data.currentPosition += data.totalWidth;
-                    }
-
-                    data.element.style.transform = `translateX(${data.currentPosition}px)`;
-
-                    // Resume auto-scroll after 1 second of no scrolling
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(() => {
-                        data.isInteracting = false;
-                    }, 1000);
-                }, { passive: false });
-            });
-
-            // Animate only the active marquee (unless interacting)
-            function step() {
-                if (activeMarquee && !activeMarquee.isInteracting) {
-                    activeMarquee.currentPosition -= speed;
-                    if (activeMarquee.currentPosition <= -activeMarquee.totalWidth) {
-                        activeMarquee.currentPosition += activeMarquee.totalWidth;
-                    }
-                    activeMarquee.element.style.transform = `translateX(${activeMarquee.currentPosition}px)`;
-                }
-                requestAnimationFrame(step);
-            }
-
-            step();
         }
 
-        // Fetch data and build page
         async function init() {
             try {
                 const response = await fetch(SHEET_URL);
@@ -335,29 +344,24 @@
                 const container = document.getElementById('projects-container');
                 container.innerHTML = projects.map(p => createProjectHTML(p)).join('');
 
-                // Wait for all images to load, then start marquees
-                const allImages = container.querySelectorAll('img');
-                let loaded = 0;
-                const total = allImages.length;
-
-                allImages.forEach(img => {
-                    const handleLoad = () => {
-                        loaded++;
-                        if (loaded === total) startMarquees();
-                    };
-
-                    if (img.complete) {
-                        handleLoad();
-                    } else {
-                        img.addEventListener('load', handleLoad);
-                        img.addEventListener('error', handleLoad); // Count errors too
-                    }
-                });
-
                 setupFilters();
                 setupCreditsToggle();
                 setupHeroToggle();
 
+                // Wait for all images to load (with actual dimensions) so Embla measures correctly
+                const allImages = Array.from(container.querySelectorAll('img'));
+                await Promise.all(allImages.map(img =>
+                    (img.complete && img.naturalWidth > 0)
+                        ? Promise.resolve()
+                        : new Promise(resolve => {
+                            img.addEventListener('load', resolve);
+                            img.addEventListener('error', resolve);
+                        })
+                ));
+                // One more frame for layout to settle before Embla measures
+                await new Promise(resolve => requestAnimationFrame(resolve));
+
+                startCarousels();
             } catch (error) {
                 console.error('Failed to load projects:', error);
             }
@@ -365,5 +369,4 @@
 
         init();
     </script>
-<!-- <script src='graph.js'></script> -->
 </html>
