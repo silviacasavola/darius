@@ -46,22 +46,14 @@
 </head>
 <body>
 <section id="header">
-  <div id="header-left">Dario Cerisano</div>
+  <a id="header-email" href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>
+  <div id="header-name">Dario Cerisano</div>
   <div id="header-center">
     <span class="filter-btn" data-category="editorial">editorial</span>|
     <span class="filter-btn" data-category="campaign">campaign</span>|
     <span class="filter-btn" data-category="analogue">analogue</span>
   </div>
-  <div id="header-right">
-    <div id="hero-toggle">▾</div>
-  </div>
-  <div id="hero">
-    <a id="hero-link-left" href="mailto:dariocerisano@gmail.com">dariocerisano@gmail.com</a>
-    <a id="hero-link-right" href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
-    <!-- <div id="hero-subtitle">Art director and photographer</div> -->
-    <p id="hero-bio">I am an art director and photographer turning dreams into solide realtà. Selected clients: Silvia, Inman, Diego, Ali. Selected publications: Horses International, QB, Lallo33, ma 33 non è l'età.</p>
-    <img src="./opening.png" alt="Dario Cerisano">
-  </div>
+  <a id="header-instagram" href="https://www.instagram.com/dariocerisano">@dariocerisano</a>
 </section>
 
 
@@ -132,7 +124,7 @@
             <div class="marquee__container">
                 ${slidesHTML}
             </div>
-        <div class="project-information2"><span class="name2">${project.name}</span> <span class="sub2">${project.subtitle || project.category}, ${project.year}</span></div>
+        <div class="project-information2"><span class="name2">${project.name}</span><span class="year2">${project.subtitle || project.category}, ${project.year}</span><span class="credits2">full credits ▾</span></div>
         </div>
         <div class="project-information">${project.name} (${project.subtitle || project.category}, ${project.year}) <span class="expand">▾</span></div>
         </div>
@@ -140,35 +132,6 @@
             <span>${project.credits}</span>
         </div>
     </div>`;
-        }
-
-        function setupHeroToggle() {
-            const toggle = document.getElementById('hero-toggle');
-            const header = document.getElementById('header');
-            const hero = document.getElementById('hero');
-
-            function collapseHero() {
-                if (!header.classList.contains('collapsed')) {
-                    header.classList.add('collapsed');
-                    toggle.classList.add('flipped');
-                }
-            }
-
-            function toggleHero() {
-                header.classList.toggle('collapsed');
-                toggle.classList.toggle('flipped');
-            }
-
-            toggle.addEventListener('click', toggleHero);
-            hero.addEventListener('click', collapseHero);
-
-            let heroScrolled = false;
-            window.addEventListener('wheel', (e) => {
-                if (!heroScrolled && e.deltaY > 0) {
-                    collapseHero();
-                    heroScrolled = true;
-                }
-            });
         }
 
         // Shared state used by both setupCreditsToggle and startCarousels
@@ -204,11 +167,13 @@
             if (!document.querySelector('.credits.expanded')) return;
             document.querySelectorAll('.credits.expanded').forEach(c => {
                 c.classList.remove('expanded');
-                c.style.maxHeight = '0';
             });
             document.querySelectorAll('.expand').forEach(el => {
                 el.classList.remove('flipped');
                 el.innerHTML = '▾';
+            });
+            document.querySelectorAll('.credits2').forEach(el => {
+                el.innerHTML = 'full credits ▾';
             });
         }
 
@@ -217,14 +182,15 @@
                 const info = container.querySelector('.project-information');
                 const expander = container.querySelector('.expand');
                 const credits = container.querySelector('.credits');
+                const credits2btn = container.querySelector('.credits2');
 
                 if (!info || !expander || !credits) return;
 
-                info.addEventListener('click', function() {
+                function handleToggle() {
                     document.querySelectorAll('.credits.expanded').forEach(c => {
                         if (c !== credits) {
                             c.classList.remove('expanded');
-                            c.style.maxHeight = '0';
+                            c.style.maxHeight = '';
                         }
                     });
                     document.querySelectorAll('.expand').forEach(el => {
@@ -233,29 +199,28 @@
                             el.innerHTML = '▾';
                         }
                     });
+                    document.querySelectorAll('.credits2').forEach(el => {
+                        if (el !== credits2btn) el.innerHTML = 'full credits ▾';
+                    });
 
                     const willExpand = !credits.classList.contains('expanded');
                     credits.classList.toggle('expanded');
                     expander.classList.toggle('flipped');
                     expander.innerHTML = willExpand ? '▴' : '▾';
+                    if (credits2btn) credits2btn.innerHTML = willExpand ? 'full credits ▴' : 'full credits ▾';
 
                     if (willExpand) {
                         const expansion = Math.min(credits.scrollHeight, window.innerHeight * 0.5);
-                        credits.style.maxHeight = expansion + 'px';
 
                         creditsIgnoreUntil = performance.now() + 1500;
                         const containerRect = container.getBoundingClientRect();
                         const targetY = window.scrollY + containerRect.bottom + expansion - window.innerHeight;
                         smoothScrollTo(targetY, 900);
-                    } else {
-                        credits.style.maxHeight = '0';
-
-                        creditsIgnoreUntil = performance.now() + 1500;
-                        const containerRect = container.getBoundingClientRect();
-                        const targetY = window.scrollY + containerRect.top;
-                        smoothScrollTo(targetY, 900);
                     }
-                });
+                }
+
+                info.addEventListener('click', handleToggle);
+                if (credits2btn) credits2btn.addEventListener('click', handleToggle);
             });
         }
 
@@ -340,7 +305,8 @@
                 // (i.e., the user has settled on this project, not mid-scroll).
                 // Same view-change moment also closes any expanded credits.
                 const projectContainer = viewport.closest('.project-container');
-                const io = new IntersectionObserver(entries => {
+
+                const ioInView = new IntersectionObserver(entries => {
                     entries.forEach(e => {
                         if (e.isIntersecting) {
                             autoplay.play();
@@ -349,25 +315,55 @@
                             autoplay.stop();
                             projectContainer?.classList.remove('in-view');
                         }
-                        setTimeout(closeAllCredits, 500);
+                    });
+                }, { threshold: 0.5 });
+                ioInView.observe(viewport);
+
+                const ioCredits = new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (!e.isIntersecting) setTimeout(closeAllCredits, 500);
                     });
                 }, { threshold: 0.95 });
-                io.observe(viewport);
+                ioCredits.observe(viewport);
             });
+        }
+
+        function loadFallbackProjects() {
+            if (window.PROJECTS_FALLBACK) {
+                return Promise.resolve(window.PROJECTS_FALLBACK);
+            }
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = './projects-fallback.js';
+                script.onload = () => resolve(window.PROJECTS_FALLBACK);
+                script.onerror = () => reject(new Error('Failed to load projects-fallback.js'));
+                document.head.appendChild(script);
+            });
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return parseCSV(await response.text());
+            } catch (error) {
+                console.warn('Sheet fetch failed, using local fallback:', error);
+                return loadFallbackProjects();
+            }
         }
 
         async function init() {
             try {
-                const response = await fetch(SHEET_URL);
-                const csv = await response.text();
-                const projects = parseCSV(csv);
-
+                const projects = await loadProjects();
                 const container = document.getElementById('projects-container');
                 container.innerHTML = projects.map(p => createProjectHTML(p)).join('');
 
+                // Set first project as default so there's no blank state before observers fire
+                container.querySelector('.project-container')?.classList.add('in-view');
+                container.querySelector('.marquee__slide')?.classList.add('is-selected');
+
                 setupFilters();
                 setupCreditsToggle();
-                setupHeroToggle();
 
                 // Wait for all images to load (with actual dimensions) so Embla measures correctly
                 const allImages = Array.from(container.querySelectorAll('img'));
@@ -384,14 +380,6 @@
 
                 startCarousels();
 
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    const firstSelectedImg = document.querySelector('.marquee .marquee__slide.is-selected img');
-                    if (firstSelectedImg) {
-                        const visualWidth = firstSelectedImg.getBoundingClientRect().width;
-                        const sideCenter = (window.innerWidth - visualWidth) / 4;
-                        document.documentElement.style.setProperty('--side-center', sideCenter + 'px');
-                    }
-                }));
             } catch (error) {
                 console.error('Failed to load projects:', error);
             }

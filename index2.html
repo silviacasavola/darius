@@ -335,12 +335,33 @@
             });
         }
 
-        async function init() {
+        function loadFallbackProjects() {
+            if (window.PROJECTS_FALLBACK) {
+                return Promise.resolve(window.PROJECTS_FALLBACK);
+            }
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = './projects-fallback.js';
+                script.onload = () => resolve(window.PROJECTS_FALLBACK);
+                script.onerror = () => reject(new Error('Failed to load projects-fallback.js'));
+                document.head.appendChild(script);
+            });
+        }
+
+        async function loadProjects() {
             try {
                 const response = await fetch(SHEET_URL);
-                const csv = await response.text();
-                const projects = parseCSV(csv);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return parseCSV(await response.text());
+            } catch (error) {
+                console.warn('Sheet fetch failed, using local fallback:', error);
+                return loadFallbackProjects();
+            }
+        }
 
+        async function init() {
+            try {
+                const projects = await loadProjects();
                 const container = document.getElementById('projects-container');
                 container.innerHTML = projects.map(p => createProjectHTML(p)).join('');
 
